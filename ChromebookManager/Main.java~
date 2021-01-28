@@ -1,0 +1,85 @@
+package ChromebookManager;
+
+// Imports necessary for program to run
+import java.io.*;
+import java.util.Scanner;
+import java.awt.*;
+import java.awt.event.*;
+import java.awt.TrayIcon.MessageType;
+
+public class Main {
+  public static void main(String[] args) throws Exception {
+    // Creates and runs a new instance of the Chromebook Manager application
+    new ChromebookManager();
+    
+    // Checks if a chromebook is overdue (1 hour later after sign-out) and sends a desktop notification/automated e-mail to the student while program is running
+    String lastMinuteChecked = "";
+    while (true) {
+      // Retieves and stores the date and time every iteration of the loop
+      String date = new java.util.Date().toString().substring(8, 10);
+      String time = new java.util.Date().toString().substring(11, 16);
+      
+      // If the last minute the chromebooks were checked is not the current time, the next check is executed
+      if (!(time.substring(3, 5).equals(lastMinuteChecked))) {
+        File unreturnedChromebooksFile = new File("unreturned_chromebooks.txt");
+        Scanner unreturnedChromebookScanner = new Scanner(unreturnedChromebooksFile);
+        
+        // Checks through each individual chromebook sign-out to see if it's overdue
+        while (unreturnedChromebookScanner.hasNextLine()) {
+          String unreturnedChromebook = unreturnedChromebookScanner.nextLine();
+          String[] unreturnedChromebookData = unreturnedChromebook.split(" ");
+          
+          // If the chromebook was signed out at 11:00PM, it checks if it is the next day at 12:00AM
+          String nextDay = String.valueOf((Integer.parseInt(date) + 1));
+          if (unreturnedChromebookData[7].substring(0, 2).equals("23") && date.equals(nextDay)) {
+            if (time.substring(0, 3).equals("00:") && time.substring(3, 5).equals(unreturnedChromebookData[7].substring(3, 5))) {
+              // Sends a desktop notification and automated e-mail notifying about the missing chromebook
+              try {
+                SystemTray tray = SystemTray.getSystemTray();
+                Image image = Toolkit.getDefaultToolkit().createImage("some-icon.png");
+                TrayIcon trayIcon = new TrayIcon(image, "Chromebook Manager");
+                trayIcon.setImageAutoSize(true);
+                trayIcon.setToolTip("Chromebook Manager");
+                tray.add(trayIcon);
+                trayIcon.displayMessage("Missing Chromebook Alert!", unreturnedChromebookData[1] + " from " + 
+                                        unreturnedChromebookData[0] + " signed out by " + 
+                                        unreturnedChromebookData[3] + " " + unreturnedChromebookData[4] + 
+                                        " has not been returned on time. An automated e-mail was sent to " + 
+                                        unreturnedChromebookData[2] + "@gapps.yrdsb.ca", MessageType.INFO);
+              }
+              // Prevents the program from crashing due to potential error(s)
+              catch (Exception e) {
+                e.printStackTrace();
+              }
+            }
+          }
+          else {
+            int hourSignedOut = Integer.parseInt(unreturnedChromebookData[7].substring(0, 2));
+            int currentHour = Integer.parseInt(time.substring(0, 2));
+            // Checks if it has been 1 hour since the chromebook signed out if it was not signed out at 11:00PM up above
+            if (currentHour == hourSignedOut + 1 && time.substring(3, 5).equals(unreturnedChromebookData[7].substring(3, 5)) && date.equals(unreturnedChromebookData[6])) {
+              // Sends a desktop notification and automated e-mail notifying about the missing chromebook
+              try {
+                SystemTray tray = SystemTray.getSystemTray();
+                Image image = Toolkit.getDefaultToolkit().createImage("some-icon.png");
+                TrayIcon trayIcon = new TrayIcon(image, "Chromebook Manager");
+                trayIcon.setImageAutoSize(true);
+                trayIcon.setToolTip("Chromebook Manager");
+                tray.add(trayIcon);
+                trayIcon.displayMessage("Missing Chromebook Alert!", unreturnedChromebookData[1] + " from " + unreturnedChromebookData[0] + " signed out by " + unreturnedChromebookData[3] + " " + unreturnedChromebookData[4] + " has not been returned on time. An automated e-mail was sent to " + unreturnedChromebookData[2] + "@gapps.yrdsb.ca", MessageType.INFO);
+              }
+              // Prevents the program from crashing due to potential error(s)
+              catch (Exception e) {
+                e.printStackTrace();
+              }
+            }
+          }
+        }
+        // After completing the check, the lastMinuteChecked variable is updated to the time/minute which was just checked
+        lastMinuteChecked = time.substring(3, 5);
+      }
+      
+    }
+    
+  }
+}

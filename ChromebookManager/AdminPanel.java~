@@ -1,0 +1,197 @@
+package ChromebookManager;
+
+import javax.swing.*;
+import java.awt.Font;
+import javax.swing.table.*;
+import javax.swing.table.DefaultTableModel;
+import java.awt.event.*;
+import java.util.ArrayList;
+import java.util.Scanner;
+import java.io.*;
+
+public class AdminPanel extends JFrame {
+    // Initiating JLabels needed
+    JLabel programTitle = new JLabel("Admin Panel");
+    JLabel tableTitle = new JLabel("Log of Chromebooks Signed Out & Returned");
+
+    // Initiating JButtons needed
+    JButton changePassword = new JButton("Change Password");
+    JButton modifyChromebooks = new JButton("Modify Chromebooks");
+
+    // Initiating JTable needed    
+    DefaultTableModel model = new DefaultTableModel();
+    JTable table = new JTable(model);
+    JScrollPane pane = new JScrollPane(table);
+
+    // Setting fonts needed
+    Font bigSerif = new Font("serif", Font.PLAIN, 30);
+    Font smallSerif = new Font("serif", Font.PLAIN, 18);
+
+    // Number of ModifyChromebook windows open
+    private static ArrayList<ModifyChromebooks> modifyChromebookWindows = new ArrayList<ModifyChromebooks>();
+    
+    public void top() {
+        programTitle.setBounds(30, -20, 400, 100);
+        programTitle.setFont(bigSerif);
+    }
+
+    // Creates table of all chromebooks borrowed today (middle section of GUI)
+    public void table() {
+      // Makes it so the table is not editable or changeable
+      table.setDefaultEditor(Object.class, null);
+      table.getTableHeader().setReorderingAllowed(false);
+      table.getTableHeader().setResizingAllowed(false);
+      
+      // Makes it so that the rows/columns in the table are unselectable
+      table.setFocusable(false);
+      table.setRowSelectionAllowed(false);
+      
+      tableTitle.setFont(smallSerif);
+      tableTitle.setBounds(230, 22, 400, 100);
+
+      // Adding columns to the table
+      model.addColumn("Cart");
+      model.addColumn("Laptop");
+      model.addColumn("Student ID");
+      model.addColumn("First Name");
+      model.addColumn("Last Name");
+      model.addColumn("Date");
+      model.addColumn("Time");
+      model.addColumn("Status");
+
+      // Setting width of columns
+      table.getColumnModel().getColumn(0).setPreferredWidth(50);
+      table.getColumnModel().getColumn(1).setPreferredWidth(50);
+      table.getColumnModel().getColumn(2).setPreferredWidth(85);
+      table.getColumnModel().getColumn(3).setPreferredWidth(80);
+      table.getColumnModel().getColumn(4).setPreferredWidth(80);
+      table.getColumnModel().getColumn(5).setPreferredWidth(75);
+      table.getColumnModel().getColumn(6).setPreferredWidth(60);
+      table.getColumnModel().getColumn(7).setPreferredWidth(87);
+
+      // Centers all cells in table
+      DefaultTableCellRenderer renderer = new DefaultTableCellRenderer();
+      renderer.setHorizontalAlignment( SwingConstants.CENTER );
+      for (int i=0; i<table.getColumnCount(); i++){
+          table.setDefaultRenderer(table.getColumnClass(i), renderer);
+      }
+
+      // Creates table and makes it scrollable
+      table.setRowHeight(35);
+      table.setAutoResizeMode(JTable.AUTO_RESIZE_OFF);
+      pane.setBounds(90, 90, 585, 385);
+  }
+
+  public void bottom() {
+      changePassword.setBounds(120, 493, 225, 50);
+      modifyChromebooks.setBounds(420, 493, 225, 50);
+  }
+
+    public void actionModifyChromebooks() {
+      modifyChromebooks.addActionListener(new ActionListener() {
+        public void actionPerformed (ActionEvent e) {
+          try {
+            if (modifyChromebookWindows.size() == 0) {
+              modifyChromebookWindows.add(new ModifyChromebooks());
+            }
+          }
+          catch (Exception exception) {
+            exception.printStackTrace();
+          }
+        }
+      });
+    }
+  
+    public void actionChangePassword() {
+        changePassword.addActionListener(new ActionListener() {
+            public void actionPerformed(ActionEvent e) {
+              try {
+                String password = new Scanner(new File("password.txt")).nextLine();
+                String currentPassword = "";
+                String newPassword = "";
+                String confirmNewPassword = "";
+                JFrame parent = new JFrame();
+                JPasswordField currentPasswordField = new JPasswordField();
+                JPasswordField newPasswordField = new JPasswordField();
+                JPasswordField confirmNewPasswordField = new JPasswordField();
+                Object[] message = {
+                    "Current password:", currentPasswordField,
+                    "New password:", newPasswordField,
+                    "Confirm new password:", confirmNewPasswordField,
+                };
+                int option = JOptionPane.showConfirmDialog(parent, message, "Set new password", JOptionPane.OK_CANCEL_OPTION);
+                if (option == JOptionPane.OK_OPTION) {
+                    currentPassword = new String (currentPasswordField.getPassword());
+                    newPassword = new String(newPasswordField.getPassword());
+                    confirmNewPassword = new String (confirmNewPasswordField.getPassword());
+                }
+                if (currentPassword.equals(password) && newPassword.equals(confirmNewPassword) && !(newPassword.equals("")) && !(newPassword.equals(password))) {
+                  JOptionPane.showMessageDialog(null, "Password was successfully changed.");
+                  FileWriter passwordWriter = new FileWriter("password.txt");
+                  passwordWriter.write(newPassword);
+                  passwordWriter.close();
+                }
+                else if (option == JOptionPane.OK_OPTION && newPassword.equals(password)) {
+                  JOptionPane.showMessageDialog(null, "You did not fill in the required fields correctly.\nPlease try again.");
+                }
+                else if (option == JOptionPane.OK_OPTION) {
+                  JOptionPane.showMessageDialog(null, "You did not fill in the required fields correctly.\nPlease try again.");
+                }
+              }
+              catch (IOException exception) {
+                exception.printStackTrace();
+              }
+          }
+        });
+    }
+    
+    public static void closeModifyChromebooks() {
+      modifyChromebookWindows.clear();
+    }
+    
+    public void actionCloseAdminPanel() {
+      addWindowListener(new WindowAdapter() {
+        public void windowClosing(WindowEvent windowEvent) {
+          ChromebookManager.closeAdminPanel();
+        }
+      });
+    }
+
+    public void updateTable() throws Exception {
+      model.setRowCount(0);
+      
+      File logFile = new File("log.txt");
+      Scanner logScanner = new Scanner(logFile);
+      while (logScanner.hasNextLine()) {
+        String loggedChromebook = logScanner.nextLine();
+        String[] loggedChromebookInfo = loggedChromebook.split(" ");
+        model.addRow(new Object[]{loggedChromebookInfo[0], 
+          loggedChromebookInfo[1], loggedChromebookInfo[2], 
+          loggedChromebookInfo[3], loggedChromebookInfo[4], 
+          loggedChromebookInfo[5] + " " + loggedChromebookInfo[6], 
+          loggedChromebookInfo[7], loggedChromebookInfo[8]});
+      }
+    }
+    
+    public AdminPanel() throws Exception {
+        top();
+        table();
+        bottom();
+        actionModifyChromebooks();
+        actionChangePassword();
+        actionCloseAdminPanel();
+
+        add(programTitle);
+        add(tableTitle);
+        add(changePassword);
+        add(modifyChromebooks);
+        add(pane);
+
+        setSize(800, 600); 
+        setLayout(null);
+        setResizable(false);
+        setVisible(true);
+        
+        updateTable();
+    }
+}
